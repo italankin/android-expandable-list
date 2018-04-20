@@ -1,6 +1,6 @@
 # Expandable List
 
-![Screenshot](/art/scr01.png)
+![Screenshot](/art/anim.gif)
 
 Implementation of expandable list in Android. 
 
