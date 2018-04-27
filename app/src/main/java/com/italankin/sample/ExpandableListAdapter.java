@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.italankin.sample.expandablelist.ExpandableList;
+import com.italankin.sample.expandablelist.INode;
 import com.italankin.sample.items.BaseItem;
 import com.italankin.sample.items.Header1;
 import com.italankin.sample.items.Header2;
@@ -20,11 +21,11 @@ public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
     private static final int TYPE_HEADER3 = 2;
     private static final int TYPE_ITEM = 3;
 
-    private final ExpandableList<Integer> dataset;
+    private final ExpandableList dataset;
     private final LayoutInflater inflater;
     private final Listener listener;
 
-    public ExpandableListAdapter(Context context, ExpandableList<Integer> dataset, Listener listener) {
+    public ExpandableListAdapter(Context context, ExpandableList dataset, Listener listener) {
         this.inflater = LayoutInflater.from(context);
         this.dataset = dataset;
         this.listener = listener;
@@ -54,7 +55,7 @@ public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
             public void onClick(View v) {
                 int pos = holder.getAdapterPosition();
                 if (pos != RecyclerView.NO_POSITION) {
-                    ExpandableList.Node<Integer> node = dataset.getNode(pos);
+                    INode node = dataset.get(pos);
                     switch (getItemViewType(pos)) {
                         case TYPE_HEADER1:
                         case TYPE_HEADER2:
@@ -85,7 +86,7 @@ public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
 
     @Override
     public void onBindViewHolder(Holder holder, int position) {
-        BaseItem item = (BaseItem) dataset.getNode(position);
+        BaseItem item = (BaseItem) dataset.get(position);
         holder.text.setText(item.text);
         if (!(item instanceof Item)) {
             int end = item.isExpanded() ? R.drawable.ic_keyboard_arrow_up : R.drawable.ic_keyboard_arrow_down;
@@ -95,7 +96,7 @@ public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
 
     @Override
     public int getItemViewType(int position) {
-        ExpandableList.Node<Integer> node = dataset.getNode(position);
+        INode node = dataset.get(position);
         if (node instanceof Header1) {
             return TYPE_HEADER1;
         }
@@ -110,16 +111,16 @@ public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
 
     @Override
     public long getItemId(int position) {
-        return dataset.getNode(position).hashCode();
+        return dataset.get(position).hashCode();
     }
 
     @Override
     public int getItemCount() {
-        return dataset.listSize();
+        return dataset.size();
     }
 
     public interface Listener {
-        void onListItemClick(int pos, ExpandableList.Node<Integer> item);
+        void onListItemClick(int pos, INode item);
     }
 }
 

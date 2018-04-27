@@ -2,87 +2,71 @@ package com.italankin.sample.expandablelist;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 
 /**
  * Utility structure to represent expandable list.
  */
-public class ExpandableList<T> implements Iterable<ExpandableList.Node<T>> {
+public class ExpandableList extends Node implements List<INode> {
 
     /**
-     * List of parent nodes attached to this list
+     * Actual list of nodes. It is a flatten representation of current expanded nodes.
      */
-    private final List<Node<T>> directNodes = new LinkedList<>();
-    /**
-     * All nodes in the list (actual list)
-     */
-    private final List<Node<T>> nodes = new LinkedList<>();
+    private final List<INode> list = new LinkedList<>();
 
-    private final Observer<T> nodeObserver = new Observer<T>() {
-        @Override
-        public void onChanged(Node<T> node) {
-            invalidate();
-            notifyObservers(node);
-        }
-    };
-    private final List<Observer<T>> observers = new ArrayList<>(0);
+    private boolean ignoreInvalidate = false;
 
     public ExpandableList() {
     }
 
-    public ExpandableList(Collection<Node<T>> nodes) {
-        directNodes.addAll(nodes);
+    public ExpandableList(Collection<? extends INode> children) {
+        insertAll(children);
+    }
+
+    public void insertAll(Collection<? extends INode> children) {
+        insertAll(0, children);
+    }
+
+    public void insertAll(int index, Collection<? extends INode> children) {
+        if (index < 0 || index > size()) {
+            throw new IndexOutOfBoundsException("index=" + index + " is out of bounds: [0, " + size() + "]");
+        }
+        ignoreInvalidate = true;
+        int count = 0;
+        for (INode node : children) {
+            insert(index + count, node);
+            count++;
+        }
+        ignoreInvalidate = false;
+        invalidate();
+    }
+
+    @Override
+    public void setExpanded(boolean expanded) {
+        ignoreInvalidate = true; // to avoid calling invalidate() multiple times
+        for (INode node : children) {
+            node.setExpanded(expanded);
+        }
+        ignoreInvalidate = false;
         invalidate();
     }
 
     /**
-     * Add parent node to this tree.
-     *
-     * @param node node
-     * @return count of nodes added to current list
+     * @return {@code true}, if all nodes are expanded, {@code false} otherwise
      */
-    public int add(Node<T> node) {
-        return add(directNodes.size(), node);
-    }
-
-    /**
-     * Add parent node to this tree.
-     *
-     * @param index index at which the node is to be inserted
-     * @param node  node
-     * @return count of nodes added to current list
-     */
-    public int add(int index, Node<T> node) {
-        if (directNodes.indexOf(node) != -1) {
-            return 0;
+    @Override
+    public boolean isExpanded() {
+        for (INode node : children) {
+            if (!node.isExpanded()) {
+                return false;
+            }
         }
-        try {
-            directNodes.add(index, node);
-            node.addObserver(nodeObserver);
-            return addInternal(node);
-        } finally {
-            notifyObservers(node);
-        }
-    }
-
-    /**
-     * Remove parent node from this tree.
-     *
-     * @param node node
-     * @return count of nodes removed from the current list
-     */
-    public int remove(Node<T> node) {
-        if (!directNodes.remove(node)) {
-            return 0;
-        }
-        try {
-            node.removeObserver(nodeObserver);
-            return removeInternal(node);
-        } finally {
-            notifyObservers(node);
-        }
+        return true;
     }
 
     /**
@@ -91,15 +75,14 @@ public class ExpandableList<T> implements Iterable<ExpandableList.Node<T>> {
      * @param node node
      * @return count of nodes added to the current list (returns {@code 0} if parent was already expanded)
      */
-    public int expand(Node<T> node) {
+    public int expand(INode node) {
+        if (!isChild(node)) {
+            throw new IllegalArgumentException(node + " is not a member of this list");
+        }
         if (!node.isExpanded()) {
-            try {
-                int old = nodes.size();
-                node.setExpanded(true);
-                return nodes.size() - old;
-            } finally {
-                notifyObservers(node);
-            }
+            int old = list.size();
+            node.setExpanded(true);
+            return list.size() - old;
         }
         return 0;
     }
@@ -110,15 +93,14 @@ public class ExpandableList<T> implements Iterable<ExpandableList.Node<T>> {
      * @param node node
      * @return count of nodes removed from the current list (returns {@code 0} if parent was already collapsed)
      */
-    public int collapse(Node<T> node) {
+    public int collapse(INode node) {
+        if (!isChild(node)) {
+            throw new IllegalArgumentException();
+        }
         if (node.isExpanded()) {
-            try {
-                int old = nodes.size();
-                node.setExpanded(false);
-                return old - nodes.size();
-            } finally {
-                notifyObservers(node);
-            }
+            int old = list.size();
+            node.setExpanded(false);
+            return old - list.size();
         }
         return 0;
     }
@@ -127,390 +109,402 @@ public class ExpandableList<T> implements Iterable<ExpandableList.Node<T>> {
      * Collapse all parent nodes.
      */
     public void collapseAll() {
-        expandNodes(false);
+        setExpanded(false);
     }
 
     /**
      * Expand all parent nodes.
      */
     public void expandAll() {
-        expandNodes(true);
-    }
-
-    /**
-     * Retrieve a payload for the node at {@code index}.
-     *
-     * @param index index of node to get payload from
-     * @return payload of node at {@code index}
-     */
-    public T getPayload(int index) {
-        return getNode(index).getPayload();
-    }
-
-    /**
-     * Get list node at {@code index}.
-     *
-     * @param index [0, {@link #listSize()})
-     * @return node at {@code index}
-     */
-    public Node<T> getNode(int index) {
-        return nodes.get(index);
-    }
-
-    /**
-     * Get parent at {@code index}.
-     *
-     * @param index [0; {@link #parentsSize()})
-     * @return parent at {@code index}
-     */
-    public Node<T> getParent(int index) {
-        return directNodes.get(index);
-    }
-
-    /**
-     * Index of parent node in parent's list.
-     *
-     * @param parent parent
-     * @return index of parent
-     * @see #parentsSize()
-     * @see #getParent(int)
-     */
-    public int indexOfParent(Node<T> parent) {
-        return directNodes.indexOf(parent);
-    }
-
-    /**
-     * Get index of node within list.
-     *
-     * @param node node
-     * @return index of node
-     * @see #listSize()
-     * @see #getNode(int)
-     */
-    public int indexOf(Node<T> node) {
-        return nodes.indexOf(node);
-    }
-
-    /**
-     * @return total number of parents in this tree
-     */
-    public int parentsSize() {
-        return directNodes.size();
-    }
-
-    /**
-     * @return total number of list nodes in current state
-     */
-    public int listSize() {
-        return nodes.size();
+        setExpanded(true);
     }
 
     /**
      * @return total number of all nodes (including collapsed)
      */
     public int absoluteSize() {
-        return computeAbsoluteSize();
+        return getAbsoluteSize(this) - 1 /* -1 because we don't need the root to be included */;
+    }
+
+    /**
+     * Count of the children in this list.
+     * <br>
+     * Shorthand for {@code getChildren().size()}.
+     *
+     * @return count of children in this list
+     */
+    public int getChildCount() {
+        return children.size();
+    }
+
+    /**
+     * Get child at {@code index}.
+     *
+     * @param index index of the child
+     * @return child at {@code index}
+     */
+    public INode getChild(int index) {
+        return children.get(index);
     }
 
     /**
      * Invalidate tree to recalculate list content and positions.
-     * This can be used if some of parents have been changed manually.
      */
     public void invalidate() {
-        nodes.clear();
-        for (Node<T> parent : directNodes) {
+        list.clear();
+        for (INode parent : children) {
             addInternal(parent);
         }
     }
 
-    @Override
-    public Iterator<Node<T>> iterator() {
-        return nodes.iterator();
+    /**
+     * Expand or collapse all nodes, recursively.
+     *
+     * @param expanded state
+     */
+    public void setExpandedDeep(boolean expanded) {
+        ignoreInvalidate = true;
+        setExpandedDeep(expanded, this);
+        ignoreInvalidate = false;
+        invalidate();
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Observers
-    ///////////////////////////////////////////////////////////////////////////
-
-    public void addObserver(Observer<T> observer) {
-        if (observers.indexOf(observer) == -1) {
-            observers.add(observers.size(), observer);
+    private void setExpandedDeep(boolean expanded, INode node) {
+        node.setExpanded(expanded);
+        for (INode child : node.getChildren()) {
+            setExpandedDeep(expanded, child);
         }
     }
 
-    public void removeObserver(Observer<T> observer) {
-        observers.remove(observer);
+    /**
+     * {@link ExpandableList} cannot have parent.
+     */
+    @Deprecated
+    @Override
+    public void setParent(INode parent) {
+        throw new UnsupportedOperationException(ExpandableList.class.getSimpleName() + " cannot have parent");
     }
 
-    public interface Observer<T> {
-        void onChanged(Node<T> node);
+    /**
+     * {@link ExpandableList} cannot have parent.
+     *
+     * @return always null
+     */
+    @Override
+    public INode getParent() {
+        return null;
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Internal
     ///////////////////////////////////////////////////////////////////////////
 
-    private int addInternal(Node<T> node) {
-        nodes.add(node);
-        int count = 1;
-        if (!node.expanded) {
-            return count;
-        }
-        for (Node<T> child : node.children) {
-            count += addInternal(child);
-        }
-        return count;
-    }
-
-    private int removeInternal(Node<T> node) {
-        nodes.remove(node);
-        int count = 1;
-        if (!node.expanded) {
-            return count;
-        }
-        for (Node<T> child : node.children) {
-            count += removeInternal(child);
+    /**
+     * Compute absolute size of the {@code node}.
+     *
+     * @param node node
+     * @return absolute size of node, including collapsed nodes.
+     */
+    protected int getAbsoluteSize(INode node) {
+        int count = 1; // include parent node
+        for (INode child : node.getChildren()) {
+            count += getAbsoluteSize(child);
         }
         return count;
     }
 
-    private int computeAbsoluteSize() {
-        int count = 0;
-        for (Node<T> node : directNodes) {
-            count += node.internalSize();
+    /**
+     * Add {@code node} and it's children (if {@code node} is {@link INode#isExpanded() expanded}) to the {@link #list}.
+     *
+     * @param node node
+     */
+    protected void addInternal(INode node) {
+        list.add(node);
+        if (node.isExpanded()) {
+            for (INode child : node.getChildren()) {
+                addInternal(child);
+            }
         }
-        return count;
     }
 
-    private void notifyObservers(Node<T> node) {
-        for (int i = observers.size() - 1; i >= 0; i--) {
-            observers.get(i).onChanged(node);
+    @Override
+    public void onInserted(INode child) {
+        if (!ignoreInvalidate) {
+            invalidate();
         }
+        super.onInserted(child);
     }
 
-    private void expandNodes(boolean expanded) {
-        for (Node<T> node : directNodes) {
-            node.setExpanded(expanded);
+    @Override
+    public void onChanged(INode node) {
+        if (!ignoreInvalidate) {
+            invalidate();
+        }
+        super.onChanged(node);
+    }
+
+    @Override
+    public void onDeleted(INode fromParent, INode child) {
+        if (!ignoreInvalidate) {
+            invalidate();
+        }
+        super.onDeleted(fromParent, child);
+    }
+
+    protected boolean isChild(INode node) {
+        INode parent = node.getParent();
+        while (parent != null) {
+            if (parent == this) {
+                return true;
+            }
+            parent = parent.getParent();
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        printNode(sb, this);
+        return sb.toString();
+    }
+
+    private static void printNode(StringBuilder sb, INode node) {
+        boolean hasParent = node.getParent() != null;
+        if (hasParent) {
+            // create parents chain
+            List<INode> parents = new ArrayList<>(1);
+            INode p = node.getParent();
+            while (p != null) {
+                parents.add(0, p);
+                p = p.getParent();
+            }
+            // the root node comes first
+            for (INode parent : parents) {
+                if (parent.getParent() != null) {
+                    List<? extends INode> children = parent.getParent().getChildren();
+                    if (children.get(children.size() - 1) != parent) {
+                        // if parent is not the last node of it's parent - print pipe
+                        sb.append("|  ");
+                        continue;
+                    }
+                }
+                // for other nodes print spaces
+                sb.append("   ");
+            }
+            List<? extends INode> children = node.getParent().getChildren();
+            if (children.get(children.size() - 1) == node) {
+                // check if node is last child of it's parent
+                sb.append("└");
+            } else {
+                sb.append("├");
+            }
+        }
+        sb.append(node.isExpanded() ? "+ " : "─ ");
+        sb.append(node.getClass().getSimpleName());
+        if (hasParent) {
+            // print parent's index
+            sb.append(String.format(" [%d] ", node.getParent().getChildren().indexOf(node)));
+        }
+        sb.append("\n");
+        // print children of the node
+        for (INode child : node.getChildren()) {
+            printNode(sb, child);
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Node
+    // List
     ///////////////////////////////////////////////////////////////////////////
 
     /**
-     * List node
+     * Get actual list size, which contains all expanded nodes.
+     *
+     * @return actual list size
      */
-    public static class Node<T> implements Observer<T> {
+    @Override
+    public int size() {
+        return list.size();
+    }
 
-        private T payload;
+    /**
+     * Get element at {@code index} from actual list.
+     *
+     * @param index index of element
+     * @return element at {@code index}
+     */
+    @Override
+    public INode get(int index) {
+        return list.get(index);
+    }
 
-        private Node<T> parent = null;
-        private boolean expanded = false;
-        private final List<Node<T>> children = new LinkedList<>();
+    @Override
+    public boolean isEmpty() {
+        return list.isEmpty();
+    }
 
-        private final List<Observer<T>> observers = new ArrayList<>(0);
+    @Override
+    public boolean contains(Object o) {
+        return list.contains(o);
+    }
 
-        /**
-         * Construct a new node with empty payload.
-         */
-        public Node() {
-        }
+    @Override
+    public INode[] toArray() {
+        INode[] array = new INode[list.size()];
+        return list.toArray(array);
+    }
 
-        /**
-         * Construct a new node with given payload.
-         *
-         * @param payload payload
-         */
-        public Node(T payload) {
-            setPayload(payload);
-        }
+    @Override
+    public boolean containsAll(Collection<?> collection) {
+        return list.containsAll(collection);
+    }
 
-        /**
-         * Expand or collapse node.
-         *
-         * @param expanded new state
-         */
-        public void setExpanded(boolean expanded) {
-            if (this.expanded != expanded) {
-                this.expanded = expanded;
-                if (!children.isEmpty()) {
-                    onChanged(this);
-                }
+    @Override
+    public int indexOf(Object o) {
+        return list.indexOf(o);
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+        return list.lastIndexOf(o);
+    }
+
+    @Override
+    public Iterator<INode> iterator() {
+        return listIterator(0);
+    }
+
+    @Override
+    public ListIterator<INode> listIterator() {
+        return listIterator(0);
+    }
+
+    @Override
+    public ListIterator<INode> listIterator(int index) {
+        return new ListItr(index);
+    }
+
+    @Override
+    public List<INode> subList(int from, int to) {
+        return Collections.unmodifiableList(list.subList(from, to));
+    }
+
+    /**
+     * Any modifications must be made by methods in {@link ExpandableList}.
+     */
+    private class ListItr implements ListIterator<INode> {
+        int cursor;
+
+        public ListItr(int startFrom) {
+            if (startFrom < 0 || startFrom > size()) {
+                throw new IndexOutOfBoundsException("startFrom=" + startFrom + " is not within bounds: [0; " + size() + "]");
             }
-        }
-
-        /**
-         * Detach this node from the parent.
-         */
-        public boolean detach() {
-            return parent != null && parent.remove(this);
-        }
-
-        /**
-         * Add child to node.
-         * If node is attached to a tree, it's required to call {@link #invalidate()} to update tree state.
-         *
-         * @param child child node
-         */
-        public void add(Node<T> child) {
-            add(children.size(), child);
-        }
-
-
-        /**
-         * Add child to node.
-         * If node is attached to a tree, it's required to call {@link #invalidate()} to update tree state.
-         *
-         * @param index index at which child is to be insterted
-         * @param child child node
-         */
-        public void add(int index, Node<T> child) {
-            if (child.parent != this) {
-                children.add(index, child);
-                child.parent = this;
-                child.addObserver(this);
-                onChanged(this);
-            }
-        }
-
-        /**
-         * Remove child from node.
-         *
-         * @param child child node
-         */
-        private boolean remove(Node<T> child) {
-            if (removeInternal(child)) {
-                onChanged(this);
-                return true;
-            }
-            return false;
-        }
-
-        /**
-         * Remove all child nodes.
-         */
-        public void removeChildren() {
-            if (!children.isEmpty()) {
-                for (int i = children.size() - 1; i >= 0; i--) {
-                    removeInternal(children.get(i));
-                }
-                onChanged(this);
-            }
-        }
-
-        /**
-         * Get index of child in parent.
-         *
-         * @param child node
-         * @return index of {@code child}, or {@code -1} if not found in parent's list
-         */
-        public int indexOf(Node<T> child) {
-            if (child == this || child.parent != this) {
-                return -1;
-            }
-            return children.indexOf(child);
-        }
-
-        /**
-         * Get current node state.
-         *
-         * @return current state
-         */
-        public boolean isExpanded() {
-            return expanded;
-        }
-
-        /**
-         * @return the parent of this node. Can be {@link null} if node has no parent.
-         */
-        public Node<T> getParent() {
-            return parent;
-        }
-
-        /**
-         * Set node payload.
-         *
-         * @param payload new payload
-         */
-        public void setPayload(T payload) {
-            this.payload = payload;
-        }
-
-        /**
-         * Get node payload.
-         *
-         * @return node payload
-         */
-        public T getPayload() {
-            return payload;
-        }
-
-        public int getParentIndex() {
-            return parent != null ? parent.indexOf(this) : -1;
-        }
-
-        /**
-         * Get child node by index.
-         *
-         * @param index index of node to get
-         * @return node at {@code index}
-         */
-        public Node<T> getChild(int index) {
-            return children.get(index);
-        }
-
-        /**
-         * @return count of child nodes
-         */
-        public int getChildCount() {
-            return children.size();
-        }
-
-        /**
-         * @return internal size of the node, including nested
-         */
-        public int internalSize() {
-            int count = 1;
-            for (Node<T> child : children) {
-                count += child.internalSize();
-            }
-            return count;
-        }
-
-        ///////////////////////////////////////////////////////////////////////////
-        // Internal
-        ///////////////////////////////////////////////////////////////////////////
-
-        private boolean removeInternal(Node<T> child) {
-            if (children.remove(child)) {
-                child.removeObserver(this);
-                child.parent = null;
-                return true;
-            }
-            return false;
-        }
-
-        ///////////////////////////////////////////////////////////////////////////
-        // NodeObserver
-        ///////////////////////////////////////////////////////////////////////////
-
-        public void addObserver(Observer<T> observer) {
-            if (observers.indexOf(observer) == -1) {
-                observers.add(observers.size(), observer);
-            }
-        }
-
-        public void removeObserver(Observer<T> observer) {
-            observers.remove(observer);
+            this.cursor = startFrom;
         }
 
         @Override
-        public void onChanged(Node<T> node) {
-            for (int i = observers.size() - 1; i >= 0; i--) {
-                observers.get(i).onChanged(node);
+        public boolean hasNext() {
+            return cursor < size() - 1;
+        }
+
+        @Override
+        public INode next() {
+            if (cursor >= size()) {
+                throw new NoSuchElementException();
             }
+            return get(cursor++);
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return cursor > 0;
+        }
+
+        @Override
+        public INode previous() {
+            if (cursor <= 0) {
+                throw new NoSuchElementException();
+            }
+            return get(--cursor);
+        }
+
+        @Override
+        public int nextIndex() {
+            return cursor;
+        }
+
+        @Override
+        public int previousIndex() {
+            return cursor - 1;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void set(INode node) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add(INode node) {
+            throw new UnsupportedOperationException();
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Unsupported operations
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override
+    public boolean add(INode node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void add(int index, INode node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <E> E[] toArray(E[] ts) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends INode> collection) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean addAll(int index, Collection<? extends INode> collection) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> collection) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> collection) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INode set(int index, INode node) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INode remove(int i) {
+        throw new UnsupportedOperationException();
+    }
 }

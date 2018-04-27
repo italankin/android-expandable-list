@@ -4,9 +4,11 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.italankin.sample.expandablelist.ExpandableList;
+import com.italankin.sample.expandablelist.INode;
 import com.italankin.sample.items.BaseItem;
 import com.italankin.sample.items.Header1;
 import com.italankin.sample.items.Header2;
@@ -23,17 +25,17 @@ public class MainActivity extends AppCompatActivity implements ExpandableListAda
     }
 
     @Override
-    public void onListItemClick(int pos, ExpandableList.Node<Integer> item) {
+    public void onListItemClick(int pos, INode item) {
         StringBuilder desc = new StringBuilder(((BaseItem) item).text);
-        ExpandableList.Node<Integer> node = item;
+        INode node = item;
         while ((node = node.getParent()) != null) {
             desc.insert(0, ((BaseItem) node).text + " > ");
         }
         Toast.makeText(this, desc.toString(), Toast.LENGTH_SHORT).show();
     }
 
-    private static ExpandableList<Integer> createList() {
-        ExpandableList<Integer> list = new ExpandableList<>();
+    private static ExpandableList createList() {
+        ExpandableList list = new ExpandableList();
         for (int i = 0; i < 5; i++) {
             // first level (root nodes)
             Header1 header1 = new Header1(i);
@@ -45,14 +47,15 @@ public class MainActivity extends AppCompatActivity implements ExpandableListAda
                     Header3 header3 = new Header3(k);
                     for (int n = 0, count = (int) (6 * Math.random() + 2); n < count; n++) {
                         // fourth level
-                        header3.add(new Item(n));
+                        header3.insert(new Item(n));
                     }
-                    header2.add(header3);
+                    header2.insert(header3);
                 }
-                header1.add(header2);
+                header1.insert(header2);
             }
             list.add(header1);
         }
+        Log.d("MainActivity", list.toString());
         return list;
     }
 }
