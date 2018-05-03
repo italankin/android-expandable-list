@@ -477,51 +477,82 @@ public class ExpandableList extends Node implements List<INode> {
     // Unsupported operations
     ///////////////////////////////////////////////////////////////////////////
 
+    /**
+     * @deprecated Unsupported. Use {@link #insert(INode)}.
+     */
+    @Deprecated
     @Override
     public boolean add(INode node) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported. Use {@link #insert(int, INode)}.
+     */
+    @Deprecated
     @Override
     public void add(int index, INode node) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public <E> E[] toArray(E[] ts) {
-        throw new UnsupportedOperationException();
-    }
-
+    /**
+     * @deprecated Unsupported. Use {@link #delete(INode)}.
+     */
+    @Deprecated
     @Override
     public boolean remove(Object o) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported. Use {@link #insertAll(Collection)}.
+     */
+    @Deprecated
     @Override
     public boolean addAll(Collection<? extends INode> collection) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported. Use {@link #insertAll(int, Collection)}.
+     */
+    @Deprecated
     @Override
     public boolean addAll(int index, Collection<? extends INode> collection) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported.
+     */
+    @Deprecated
     @Override
     public boolean removeAll(Collection<?> collection) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported.
+     */
+    @Deprecated
     @Override
     public boolean retainAll(Collection<?> collection) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported.
+     */
+    @Deprecated
     @Override
     public INode set(int index, INode node) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @deprecated Unsupported. Use {@link #delete(int)}.
+     */
+    @Deprecated
     @Override
     public INode remove(int i) {
         throw new UnsupportedOperationException();
