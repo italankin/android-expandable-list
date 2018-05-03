@@ -365,6 +365,14 @@ public class ExpandableList extends Node implements List<INode> {
         return list.toArray(array);
     }
 
+    /**
+     * @see #toArray()
+     */
+    @Override
+    public <E> E[] toArray(E[] ts) {
+        return list.toArray(ts);
+    }
+
     @Override
     public boolean containsAll(Collection<?> collection) {
         return list.containsAll(collection);
