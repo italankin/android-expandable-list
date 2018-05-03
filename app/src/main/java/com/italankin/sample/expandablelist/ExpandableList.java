@@ -46,6 +46,11 @@ public class ExpandableList extends Node implements List<INode> {
         invalidate();
     }
 
+    /**
+     * Expand/collapse all child nodes of this list.
+     *
+     * @param expanded state
+     */
     @Override
     public void setExpanded(boolean expanded) {
         ignoreInvalidate = true; // to avoid calling invalidate() multiple times
@@ -251,6 +256,12 @@ public class ExpandableList extends Node implements List<INode> {
         super.onDeleted(fromParent, child);
     }
 
+    /**
+     * Check if {@code node} is reachable from this list.
+     *
+     * @param node node
+     * @return is {@code node} reachable from this list ({@code node} is direct or indirect child of this list)
+     */
     protected boolean isChild(INode node) {
         INode parent = node.getParent();
         while (parent != null) {

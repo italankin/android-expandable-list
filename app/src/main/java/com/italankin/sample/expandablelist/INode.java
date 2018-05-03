@@ -2,6 +2,9 @@ package com.italankin.sample.expandablelist;
 
 import java.util.List;
 
+/**
+ * Base element of the expandable list.
+ */
 public interface INode {
 
     /**
