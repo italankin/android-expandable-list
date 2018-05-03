@@ -19,6 +19,9 @@ public class ExpandableList extends Node implements List<INode> {
      */
     private final List<INode> list = new LinkedList<>();
 
+    /**
+     * To avoid calling invalidate() multiple times
+     */
     private boolean ignoreInvalidate = false;
 
     public ExpandableList() {
@@ -53,7 +56,7 @@ public class ExpandableList extends Node implements List<INode> {
      */
     @Override
     public void setExpanded(boolean expanded) {
-        ignoreInvalidate = true; // to avoid calling invalidate() multiple times
+        ignoreInvalidate = true;
         for (INode node : children) {
             node.setExpanded(expanded);
         }
