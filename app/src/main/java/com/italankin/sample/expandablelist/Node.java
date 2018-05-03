@@ -38,7 +38,7 @@ public class Node implements INode, INode.Observer, Iterable<INode> {
         children.add(index, child);
         child.setParent(this);
         child.addObserver(this);
-        int inserted = countInserted(child);
+        int inserted = countVisible(child);
         onInserted(child);
         return inserted;
     }
@@ -57,7 +57,7 @@ public class Node implements INode, INode.Observer, Iterable<INode> {
         }
         child.setParent(null);
         child.removeObserver(this);
-        int removed = countRemoved(child);
+        int removed = countVisible(child);
         onDeleted(this, child);
         return removed;
     }
@@ -122,24 +122,19 @@ public class Node implements INode, INode.Observer, Iterable<INode> {
     // Internal
     ///////////////////////////////////////////////////////////////////////////
 
-    private int countInserted(INode node) {
+    /**
+     * Count visible child nodes of a given {@code node}.
+     *
+     * @param node node
+     * @return number of nodes, respecting {@link INode#isExpanded() expanded} state
+     */
+    private int countVisible(INode node) {
         int count = 1;
         if (!node.isExpanded()) {
             return count;
         }
         for (INode child : node.getChildren()) {
-            count += countInserted(child);
-        }
-        return count;
-    }
-
-    private int countRemoved(INode node) {
-        int count = 1;
-        if (!node.isExpanded()) {
-            return count;
-        }
-        for (INode child : node.getChildren()) {
-            count += countRemoved(child);
+            count += countVisible(child);
         }
         return count;
     }
