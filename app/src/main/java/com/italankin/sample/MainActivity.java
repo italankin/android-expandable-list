@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements ExpandableListAda
                 }
                 header1.insert(header2);
             }
-            list.add(header1);
+            list.insert(header1);
         }
         Log.d("MainActivity", list.toString());
         return list;
