@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
@@ -17,7 +16,7 @@ public class ExpandableList extends Node implements List<INode> {
     /**
      * Actual list of nodes. It is a flatten representation of current expanded nodes.
      */
-    private final List<INode> list = new LinkedList<>();
+    private final List<INode> list = new ArrayList<>();
 
     /**
      * To avoid calling invalidate() multiple times
