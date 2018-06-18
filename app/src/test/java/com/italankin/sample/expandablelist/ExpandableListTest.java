@@ -614,6 +614,22 @@ public class ExpandableListTest {
     }
 
     @Test
+    public void indexOf() {
+        Node target = new Node();
+        INode node = new NodeBuilder(false).add(target).build();
+        ExpandableList list = new ListBuilder()
+                .add(new Node())
+                .add(node)
+                .add(new Node())
+                .build();
+        assertEquals(-1, list.indexOf(target));
+        assertEquals(-1, list.indexOf((Object) target));
+        node.setExpanded(true);
+        assertEquals(2, list.indexOf(target));
+        assertEquals(2, list.indexOf((Object) target));
+    }
+
+    @Test
     public void observer_onInserted() {
         class TestObserver implements INode.Observer {
             final List<INode> inserted = new ArrayList<>();
