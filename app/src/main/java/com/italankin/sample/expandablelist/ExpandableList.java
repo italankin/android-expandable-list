@@ -386,6 +386,11 @@ public class ExpandableList extends Node implements List<INode> {
     }
 
     @Override
+    public int indexOf(INode child) {
+        return list.indexOf(child);
+    }
+
+    @Override
     public int lastIndexOf(Object o) {
         return list.lastIndexOf(o);
     }
