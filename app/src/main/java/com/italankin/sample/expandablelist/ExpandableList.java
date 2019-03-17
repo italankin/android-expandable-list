@@ -130,7 +130,8 @@ public class ExpandableList extends Node implements List<INode> {
      * @return total number of all nodes (including collapsed)
      */
     public int absoluteSize() {
-        return getAbsoluteSize(this) - 1 /* -1 because we don't need the root to be included */;
+        // -1 because we don't need the root to be included
+        return getAbsoluteSize(this) - 1;
     }
 
     /**
@@ -213,7 +214,8 @@ public class ExpandableList extends Node implements List<INode> {
      * @return absolute size of node, including collapsed nodes.
      */
     protected int getAbsoluteSize(INode node) {
-        int count = 1; // include parent node
+        // include node
+        int count = 1;
         for (INode child : node.getChildren()) {
             count += getAbsoluteSize(child);
         }
