@@ -15,7 +15,7 @@ public class Node implements INode, INode.Observer, Iterable<INode> {
     protected boolean expanded = false;
     protected final List<INode> children = new LinkedList<>();
 
-    private final List<Observer> observers = new ArrayList<>(0);
+    private final List<Observer> observers = new ArrayList<>(1);
 
     @Override
     public void setExpanded(boolean expanded) {
