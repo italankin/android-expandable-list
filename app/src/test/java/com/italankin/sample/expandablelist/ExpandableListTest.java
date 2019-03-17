@@ -22,7 +22,7 @@ public class ExpandableListTest {
     }
 
     @Test
-    public void get_vs_getParent() {
+    public void get_vs_getChild() {
         ExpandableList list = new ListBuilder()
                 .add(new NodeBuilder(true)
                         .add(3))
@@ -620,6 +620,7 @@ public class ExpandableListTest {
         iter.next();
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void indexOf() {
         Node target = new Node();
