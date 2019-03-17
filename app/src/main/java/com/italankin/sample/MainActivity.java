@@ -1,9 +1,11 @@
 package com.italankin.sample;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
+import com.italankin.sample.adapter.ExpandableListAdapter;
+import com.italankin.sample.adapter.OnHeaderClickListener;
+import com.italankin.sample.adapter.OnItemClickListener;
 import com.italankin.sample.expandablelist.ExpandableList;
 import com.italankin.sample.expandablelist.INode;
 import com.italankin.sample.items.BaseItem;
@@ -16,24 +18,47 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class MainActivity extends AppCompatActivity implements ExpandableListAdapter.Listener {
+public class MainActivity extends AppCompatActivity implements OnItemClickListener, OnHeaderClickListener {
+
+    private final ExpandableList expandableList = createList();
+    private ExpandableListAdapter expandableListAdapter;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.acitivty_main);
-        RecyclerView list = findViewById(R.id.list);
-        list.setAdapter(new ExpandableListAdapter(this, createList(), this));
+        RecyclerView recyclerView = findViewById(R.id.list);
+        expandableListAdapter = new ExpandableListAdapter(expandableList, this, this);
+        recyclerView.setAdapter(expandableListAdapter);
     }
 
     @Override
-    public void onListItemClick(int pos, INode item) {
-        StringBuilder desc = new StringBuilder(((BaseItem) item).text);
+    public void onItemClick(int position) {
+        BaseItem item = (BaseItem) expandableList.get(position);
+        StringBuilder desc = new StringBuilder(item.text);
         INode node = item;
         while ((node = node.getParent()) != null) {
             if (node.getParent() == null) break;
             desc.insert(0, ((BaseItem) node).text + " > ");
         }
         Toast.makeText(this, desc.toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onHeaderClick(int position) {
+        INode node = expandableList.get(position);
+        if (node.isExpanded()) {
+            int collapsed = expandableList.collapse(node);
+            if (collapsed > 0) {
+                expandableListAdapter.notifyItemRangeRemoved(position + 1, collapsed);
+            }
+        } else {
+            int expanded = expandableList.expand(node);
+            if (expanded > 0) {
+                expandableListAdapter.notifyItemRangeInserted(position + 1, expanded);
+            }
+        }
+        expandableListAdapter.notifyItemChanged(position);
     }
 
     private static ExpandableList createList() {
@@ -57,7 +82,6 @@ public class MainActivity extends AppCompatActivity implements ExpandableListAda
             }
             list.insert(header1);
         }
-        Log.d("MainActivity", list.toString());
         return list;
     }
 }
