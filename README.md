@@ -14,19 +14,17 @@ Implementation of expandable list in Android.
 ## Expanding/collapsing:
 
 ```java
-int nodeIndex = dataset.indexOf(node);
+int nodeIndex = expandableList.indexOf(node);
 if (node.isExpanded()) {
-    int collapsed = dataset.collapse(node);
+    int collapsed = expandableList.collapse(node);
     if (collapsed > 0) {
-        notifyItemRangeRemoved(nodeIndex + 1, collapsed);
+        adapter.notifyItemRangeRemoved(nodeIndex + 1, collapsed);
     }
 } else {
-    int expanded = dataset.expand(node);
+    int expanded = expandableList.expand(node);
     if (expanded > 0) {
-        notifyItemRangeInserted(nodeIndex + 1, expanded);
+        adapter.notifyItemRangeInserted(nodeIndex + 1, expanded);
     }
 }
-notifyItemChanged(nodeIndex);
+adapter.notifyItemChanged(nodeIndex);
 ```
-
-Example implementation of `RecyclerView.Adapter` can be found in [`ExpandableListAdapter`](/app/src/main/java/com/italankin/sample/ExpandableListAdapter.java).
