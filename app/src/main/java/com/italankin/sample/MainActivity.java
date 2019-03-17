@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements ExpandableListAda
         StringBuilder desc = new StringBuilder(((BaseItem) item).text);
         INode node = item;
         while ((node = node.getParent()) != null) {
+            if (node.getParent() == null) break;
             desc.insert(0, ((BaseItem) node).text + " > ");
         }
         Toast.makeText(this, desc.toString(), Toast.LENGTH_SHORT).show();
