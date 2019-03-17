@@ -1,7 +1,6 @@
 package com.italankin.sample;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +13,8 @@ import com.italankin.sample.items.Header1;
 import com.italankin.sample.items.Header2;
 import com.italankin.sample.items.Header3;
 import com.italankin.sample.items.Item;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 public class ExpandableListAdapter extends RecyclerView.Adapter<Holder> {
     private static final int TYPE_HEADER1 = 0;

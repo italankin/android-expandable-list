@@ -1,9 +1,6 @@
 package com.italankin.sample;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -14,6 +11,10 @@ import com.italankin.sample.items.Header1;
 import com.italankin.sample.items.Header2;
 import com.italankin.sample.items.Header3;
 import com.italankin.sample.items.Item;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class MainActivity extends AppCompatActivity implements ExpandableListAdapter.Listener {
     @Override
