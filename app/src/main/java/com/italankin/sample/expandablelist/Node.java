@@ -64,10 +64,8 @@ public class Node implements INode, INode.Observer, Iterable<INode> {
 
     @Override
     public void clear() {
-        if (!children.isEmpty()) {
-            for (int i = children.size() - 1; i >= 0; i--) {
-                onDeleted(this, children.remove(i));
-            }
+        for (int i = children.size() - 1; i >= 0; i--) {
+            delete(children.get(i));
         }
     }
 

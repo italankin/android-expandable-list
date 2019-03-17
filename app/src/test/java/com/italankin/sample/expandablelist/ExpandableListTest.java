@@ -12,6 +12,7 @@ import java.util.NoSuchElementException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ExpandableListTest {
@@ -231,8 +232,14 @@ public class ExpandableListTest {
                 .build();
         assertEquals(8, list.size());
         INode node = list.getChild(0).getChildren().get(4);
+        // make copy of children
+        List<? extends INode> children = new ArrayList<>(node.getChildren());
         node.clear();
         assertEquals(6, list.size());
+        // check removed nodes are in correct state
+        for (INode child : children) {
+            assertNull(child.getParent());
+        }
         list.getChild(0).clear();
         assertEquals(1, list.size());
         assertEquals(1, list.absoluteSize());
